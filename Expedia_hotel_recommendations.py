@@ -7,6 +7,7 @@ Created on Mon May  7 19:03:36 2018
 # %% Import packages
 
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -53,6 +54,42 @@ trainChunk = extractDate(trainChunk, 'srch_co', False, 'checkout_')
 trainY = trainChunk['hotel_cluster']
 trainX = trainChunk.drop('hotel_cluster', axis=1)
 
+# %% Building a scorer
+# Scoring allows five predictions for each sample, however for the moment I
+# will keep it simple and just do one. I do need to build my own scorer for
+# this.
+
+
+def APatK(truth, prediction):
+    """ Takes the real value and the predicted list (1 x m),
+    where m <=5 for this project and outputs the average precision. See
+    https://www.kaggle.com/c/FacebookRecruiting/discussion/2002 for a good
+    explanation of the metric"""
+
+    no_correct = 0
+    score = 0
+
+    for num, pred in enumerate(prediction):
+        if pred == truth:
+            no_correct += 1
+            score += no_correct / (num + 1)
+    # Would usually divide by the number of elements in the truth, however
+    # this is just one in this project (each sample has a single cluster)
+    return score
+
+
+def meanAPatK(actuals, preds):
+    """ Uses the APatK function to get the mean average precision.
+    Preliminarily I am using just a single prediction, so I am manually turning
+    each one into a list here. """
+
+    scoreList = [APatK(truth, list(prediction)) for truth, prediction
+                 in zip(actuals, preds)]
+
+    score = np.mean(scoreList)
+    return score
+
+
 # %% Rudimentary fit of a single chunk
 
 trainX2, testX, trainY2, testY = train_test_split(trainX, trainY)
@@ -62,5 +99,4 @@ pipe = Pipeline([
         ('clf', LogisticRegression())])
 pipe.fit(trainX2, trainY2.ravel())
 yPredict = pipe.predict(testX)
-
-
+meanAPatK(testY, yPredict)
