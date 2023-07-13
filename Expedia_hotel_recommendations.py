@@ -86,8 +86,7 @@ def meanAPatK(actuals, preds):
     scoreList = [APatK(truth, list(prediction)) for truth, prediction
                  in zip(actuals, preds)]
 
-    score = np.mean(scoreList)
-    return score
+    return np.mean(scoreList)
 
 
 # %% Rudimentary fit of a single chunk
